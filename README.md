@@ -7,3 +7,7 @@ The purpose of this project is to carry out a study on the accuracy of forecasti
 
 ## Data forecasted:
 > 10/30/2022 ~ 1/30/2023 (3 months)
+
+## Files:
+> test1.py - ARIMA Model <br>
+> test2.py - PROPHET Model
