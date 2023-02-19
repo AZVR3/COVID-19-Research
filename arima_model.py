@@ -1,31 +1,39 @@
 import pandas as pd
 import numpy as np
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
-from datetime import datetime
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-# Load the data from 'south-korea-data.csv'
-df = pd.read_csv('south-korea-data.csv')
+# Load data
+data = pd.read_csv('south-korea-data.csv', parse_dates=['Date_reported'], index_col='Date_reported')
+data_train = data.loc['2022-09-14':'2022-10-29']['Cumulative_cases']
 
-# Convert date column to datetime
-df['Date_reported'] = pd.to_datetime(df['Date_reported'])
-df.set_index('Date_reported', inplace=True)
+# Train ARIMA model
+model = ARIMA(data_train, order=(2,2,4))
+model_fit = model.fit()
 
-# Filter data range from 9/14/2022 ~ 10/29/2022
-start_date = datetime(2022, 9, 14)
-end_date = datetime(2022, 10, 29)
-df = df[(df['Date_reported'] >= start_date) & (df['Date_reported'] <= end_date)]
+# Make predictions
+start_date = '2022-10-30'
+end_date = '2023-01-30'
+data_test = data.loc[start_date:end_date]['Cumulative_cases']
+predictions = model_fit.predict(start=start_date, end=end_date, typ='levels')
 
-# Fit an ARIMA model
-model = sm.tsa.ARIMA(df['Cumulative_cases'], order=(1,1,1))
-arima_fit = model.fit()
+# Calculate errors
+mse = mean_squared_error(data_test, predictions)
+rmse = np.sqrt(mse)
+mae = mean_absolute_error(data_test, predictions)
+mape = np.mean(np.abs(predictions - data_test) / np.abs(data_test)) * 100
 
-# Forecast 10/30/2022 ~ 1/30/2023
-forecast = arima_fit.forecast(steps=91)
-forecast_df = pd.DataFrame({'forecast': forecast[0].data}, index=forecast[0].index)
+# Print errors
+print('RMSE:', rmse)
+print('MAE:', mae)
+print('MAPE:', mape)
 
+# Print model summary
+print(model_fit.summary())
 
-# Plot the forecasted data
-plt.plot(forecast_df['forecast'], label='Forecast')
+# Plot actual vs predicted values
+plt.plot(data_test, label='Actual')
+plt.plot(predictions, label='Predicted')
 plt.legend()
 plt.show()
